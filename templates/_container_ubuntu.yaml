@@ -1,0 +1,18 @@
+{{- define "container.ubuntu" -}}
+- name: "ubuntu"
+  securityContext:
+  {{- toYaml .Values.securityContext | nindent 8 }}
+  image: "{{ .Values.ubuntu_image.repository }}:{{ .Values.ubuntu_image.tag }}"
+  imagePullPolicy: {{ .Values.ubuntu_image.pullPolicy }}
+  resources:
+  {{- toYaml .Values.resources | nindent 8 }}
+  volumeMounts:
+  - name: conf
+    mountPath: /mnt/conf.d
+  - name: config-map
+    mountPath: /mnt/config-map
+  - name: data
+    mountPath: /var/lib/mysql
+  - name: hostdata
+    mountPath: /var/lib/hostdata
+{{- end -}}

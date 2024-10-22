@@ -1,0 +1,28 @@
+{{- define "init.container.mysql" -}}
+- name: "init-mysql"
+  securityContext:
+  {{- toYaml .Values.securityContext | nindent 8 }}
+  image: "{{ .Values.mysql_image.repository }}:{{ .Values.mysql_image.tag }}"
+  imagePullPolicy: {{ .Values.ubuntu_image.pullPolicy }}
+  resources:
+  {{- toYaml .Values.resources | nindent 8 }}
+  volumeMounts:
+  - name: conf
+    mountPath: /mnt/conf.d
+  - name: config-map
+    mountPath: /mnt/config-map
+  command:
+  - bash
+  - "-c"
+  - |
+    set -ex
+    [[ `cat /etc/hostname` =~ -([0-9]+)$ ]] || exit 1
+    ordinal=${BASH_REMATCH[1]}
+    echo [mysqld] > /mnt/conf.d/server-id.cnf
+    echo server-id=$((100 + $ordinal)) >> /mnt/conf.d/server-id.cnf
+    if [[ $ordinal -eq 0 ]]; then
+       cp /mnt/config-map/master.cnf /mnt/conf.d
+    else
+       cp /mnt/config-map/slave.cnf /mnt/conf.d
+    fi
+{{- end -}}

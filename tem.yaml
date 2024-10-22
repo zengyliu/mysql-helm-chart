@@ -1,0 +1,191 @@
+---
+# Source: nginx/templates/statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mynginx
+  labels:
+    helm.sh/chart: nginx-0.1.0
+    app.kubernetes.io/name: nginx
+    app.kubernetes.io/instance: mynginx
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nginx
+      app.kubernetes.io/instance: mynginx
+  template:
+    metadata:
+      labels:
+        helm.sh/chart: nginx-0.1.0
+        app.kubernetes.io/name: nginx
+        app.kubernetes.io/instance: mynginx
+        app.kubernetes.io/version: "1.16.0"
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      serviceAccountName: mynginx
+      securityContext:
+        {}
+      initContainers:
+        - name: "init-mysql"
+          securityContext:
+                {}
+          image: "mysql:5.7"
+          imagePullPolicy: IfNotPresent
+          resources:
+                {}
+          volumeMounts:
+          - name: conf
+            mountPath: /mnt/conf.d
+          - name: config-map
+            mountPath
+          command:
+          - bash
+          - "-c"
+          - |
+            set -ex
+            [[ `hostname` =~ -([0-9]+)$ ]] || exit 1
+            ordinal=${BASH_REMATCH[1]}
+            echo [mysqld] > /mnt/conf.d/server-id.cnf
+            echo server-id=$((100 + $ordinal)) >> /mnt/conf.d/server-id.cnf
+            if [[ $ordinal -eq 0 ]]; then
+               cp /mnt/conf-map/master.cnf /mnt/conf.d
+            else
+               cp /mnt/config-map/slave.cnf /mnt/conf.d
+            fi
+      containers:
+        - name: nginx
+          securityContext:
+                {}
+          image: "nginx:1.16.0"
+          imagePullPolicy: IfNotPresent
+          ports:
+          - name: http
+            containerPort: 80
+            protocol: TCP
+          livenessProbe:
+                httpGet:
+                  path: /
+                  port: http
+          readinessProbe:
+                httpGet:
+                  path: /
+                  port: http
+          resources:
+                {}
+        - name: "ubuntu"
+          securityContext:
+                {}
+          image: "local_ubuntu:1.3"
+          imagePullPolicy: IfNotPresent
+          resources:
+                {}
+          volumeMounts:
+          - name: conf
+            mountPath: /mnt/conf.d
+          - name: config-map
+            mountPath: /mnt/config-map
+
+---
+# Source: nginx/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: mynginx
+  labels:
+    helm.sh/chart: nginx-0.1.0
+    app.kubernetes.io/name: nginx
+    app.kubernetes.io/instance: mynginx
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+automountServiceAccountToken: true
+
+---
+# Source: nginx/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: mynginx
+  labels:
+    helm.sh/chart: nginx-0.1.0
+    app.kubernetes.io/name: nginx
+    app.kubernetes.io/instance: mynginx
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: nginx
+    app.kubernetes.io/instance: mynginx
+
+---
+# Source: nginx/templates/tests/test-connection.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "mynginx-test-connection"
+  labels:
+    helm.sh/chart: nginx-0.1.0
+    app.kubernetes.io/name: nginx
+    app.kubernetes.io/instance: mynginx
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['mynginx:80']
+  restartPolicy: Never
+
+---
+# Source: nginx/templates/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mynginx
+  labels:
+    helm.sh/chart: nginx-0.1.0
+    app.kubernetes.io/name: nginx
+    app.kubernetes.io/instance: mynginx
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  rules:
+    - host: "chart-example.local"
+      http:
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: mynginx
+                port:
+                  number: 80
+
+---
+# Source: nginx/templates/conf-config-map.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql
+  labels:
+    app: mysql
+data:
+  master.cnf: |
+    # 主节点MySQL的配置文件
+    [mysqld]
+    log-bin
+  slave.cnf: |
+    # 从节点MySQL的配置文件
+    [mysqld]
+    super-read-only
