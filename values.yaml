@@ -20,6 +20,14 @@ mysql_image:
    repository: mysql
    pullPolicy: IfNotPresent
    tag: "6.7"
+mysql_get_conf_image:
+   repository: xtrabackup
+   pullPolicy: IfNotPresent
+   tag: "1.4"
+sidecar_image:
+   repository: xtrabackup
+   pullPolicy: IfNotPresent
+   tag: "1.4"
 initContainers:
    enable: true
 # This is for the secretes for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/

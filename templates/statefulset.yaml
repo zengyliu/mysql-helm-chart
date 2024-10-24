@@ -33,11 +33,13 @@ spec:
       {{- if .Values.initContainers.enable }}
       initContainers:
         {{- include "init.container.mysql" . | nindent 8 }}
+        {{- include "container.get.conf" . | nindent 8}}
       {{- end}}
       containers:
         {{- include "container.nginx" . | nindent 8 }}
         {{- include "container.ubuntu" . | nindent 8 }}
         {{- include "container.sql" . | nindent 8 }}
+        {{- include "container.sidecar" . | nindent 8 }}
       volumes:
       - name: conf
         emptyDir: {}
