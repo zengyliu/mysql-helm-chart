@@ -10,4 +10,4 @@ spec:
     port: 3306
   clusterIP: None
   selector:
-    app: mysql
+    {{- include "mysql.selectorLabels" . | nindent 4 }}

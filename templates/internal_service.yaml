@@ -9,4 +9,4 @@ spec:
   - name: mysql
     port: 3306
   selector:
-    app: mysql
+    {{- include "mysql.selectorLabels" . | nindent 4 }}

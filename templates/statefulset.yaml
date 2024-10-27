@@ -1,16 +1,17 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "nginx.fullname" . }}
+  name: {{ include "mysql.fullname" . }}
   labels:
-    {{- include "nginx.labels" . | nindent 4 }}
+    {{- include "mysql.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
+  serviceName: "mysql"
   selector:
     matchLabels:
-      {{- include "nginx.selectorLabels" . | nindent 6 }}
+      {{- include "mysql.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -18,7 +19,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "nginx.labels" . | nindent 8 }}
+        {{- include "mysql.labels" . | nindent 8 }}
         {{- with .Values.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -27,7 +28,7 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "nginx.serviceAccountName" . }}
+        #serviceAccountName: {{ include "mysql.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       {{- if .Values.initContainers.enable }}
@@ -36,7 +37,6 @@ spec:
         {{- include "container.get.conf" . | nindent 8}}
       {{- end}}
       containers:
-        {{- include "container.nginx" . | nindent 8 }}
         {{- include "container.ubuntu" . | nindent 8 }}
         {{- include "container.sql" . | nindent 8 }}
         {{- include "container.sidecar" . | nindent 8 }}
